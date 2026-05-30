@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <title>깅공이의 눈</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <h1>깅공이의 눈</h1>
+    
+    <div id="video-container">
+        <video id="video" autoplay playsinline></video>
+        <canvas id="canvas"></canvas>
+    </div>
+    
+    <div class="controls">
+        <button id="btn-toggle" class="main-btn">카메라 ON</button>
+        <button class="sub-btn">카메라 전환</button>
+    </div>
+
+    <div class="mode-selector">
+        <button class="mode-btn" onclick="setMode('low')">저사양</button>
+        <button class="mode-btn active" onclick="setMode('mid')">중사양</button>
+        <button class="mode-btn" onclick="setMode('high')">고사양</button>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/onnxruntime-web/dist/ort.min.js"></script>
+    <script src="script.js"></script>
+</body>
+</html>
