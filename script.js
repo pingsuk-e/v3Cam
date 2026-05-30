@@ -63,11 +63,28 @@ async function runDetection() {
 }
 
 function drawBoxes(data) {
-    // 빨간 박스 테스트 (데이터 처리는 이 안에 추가 예정)
-    ctx.strokeStyle = 'red';
+    ctx.clearRect(0, 0, canvas.width, canvas.height); // 이전 프레임 지우기
+    
+    // data는 Float32Array임. 
+    // YOLOv8n은 8400개의 박스 후보가 있고, 각 후보는 84개의 값을 가짐.
+    // 여기서는 가장 간단하게 첫 번째 박스 후보라도 뜨는지 확인해 보자!
+    
+    // [확인용]: 데이터의 첫 10개 값을 콘솔에 찍어서 구조 확인
+    // console.log(data.slice(0, 10)); 
+
+    // 화면에 박스를 그리는 로직 (좌표 변환 예시)
+    // 실제 객체 탐지 좌표는 data 배열의 특정 인덱스에 들어있어.
+    
+    ctx.strokeStyle = '#2ecc71'; // 초록색으로 변경
     ctx.lineWidth = 4;
-    ctx.strokeRect(200, 200, 200, 200); 
+    
+    // 임시로 화면의 특정 위치에 박스를 그려서 캔버스 연결 확인
+    ctx.strokeRect(100, 100, 200, 200); 
+    ctx.font = "20px Arial";
+    ctx.fillStyle = "#2ecc71";
+    ctx.fillText("AI 감지 중...", 100, 90);
 }
+
 
 function setMode(mode) {
     currentMode = mode;
