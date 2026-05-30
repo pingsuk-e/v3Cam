@@ -4,26 +4,30 @@ let ctx = canvas.getContext('2d');
 let btnToggle = document.getElementById('btn-toggle');
 let isRunning = false;
 let session = null;
-let currentMode = 'mid'; // 기본값
+let currentMode = 'mid';
 
-// 카메라 제어 및 모델 로드
 async function toggleCam() {
     if (!isRunning) {
         try {
             const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } });
             video.srcObject = stream;
+            video.play();
+            
+            // 캔버스 크기 맞추기 (영상 시작 후 정확한 크기 반영)
+            video.onloadedmetadata = () => {
+                canvas.width = 640; // 모델 입력 크기 고정
+                canvas.height = 640;
+            };
+
             btnToggle.innerText = "카메라 OFF";
             isRunning = true;
             
-            // 모델 로드
             session = await ort.InferenceSession.create('./yolov8n.onnx');
             console.log("모델 로드 성공!");
-            
-            // 추론 루프 시작
             runDetection();
         } catch (err) {
-            console.error("오류 발생:", err);
-            alert("카메라나 모델을 불러오는 데 실패했어: " + err.message);
+            console.error("오류:", err);
+            alert("카메라/모델 로드 실패: " + err.message);
         }
     } else {
         video.srcObject.getTracks().forEach(track => track.stop());
@@ -32,32 +36,43 @@ async function toggleCam() {
     }
 }
 
-// 모드 전환
+async function runDetection() {
+    if (!isRunning) return;
+
+    ctx.drawImage(video, 0, 0, 640, 640);
+    const imgData = ctx.getImageData(0, 0, 640, 640).data;
+    
+    // RGB 채널 분리 정규화
+    const input = new Float32Array(3 * 640 * 640);
+    for (let i = 0; i < 640 * 640; i++) {
+        input[i] = imgData[i * 4] / 255.0; // R
+        input[i + 640 * 640] = imgData[i * 4 + 1] / 255.0; // G
+        input[i + 2 * 640 * 640] = imgData[i * 4 + 2] / 255.0; // B
+    }
+    
+    const tensor = new ort.Tensor('float32', input, [1, 3, 640, 640]);
+    const output = await session.run({ images: tensor });
+    const outputData = output[Object.keys(output)[0]].data;
+
+    drawBoxes(outputData);
+
+    // 모드별 루프 조절
+    if (currentMode === 'low') setTimeout(runDetection, 500);
+    else if (currentMode === 'mid') setTimeout(runDetection, 200);
+    else requestAnimationFrame(runDetection);
+}
+
+function drawBoxes(data) {
+    // 빨간 박스 테스트 (데이터 처리는 이 안에 추가 예정)
+    ctx.strokeStyle = 'red';
+    ctx.lineWidth = 4;
+    ctx.strokeRect(200, 200, 200, 200); 
+}
+
 function setMode(mode) {
     currentMode = mode;
     document.querySelectorAll('.mode-btn').forEach(btn => btn.classList.remove('active'));
     event.target.classList.add('active');
-    console.log("모드 변경:", mode);
-}
-
-// 실시간 추론 루프
-async function runDetection() {
-    if (!isRunning) return;
-
-    // 1. 영상 캡처 (640x640)
-    ctx.drawImage(video, 0, 0, 640, 640);
-    
-    // 2. 여기서 추론(Inference) 로직이 들어갈 자리야
-    // 현재는 모델만 로드된 상태고, tensor 변환과 후처리가 필요해
-    
-    // 모드에 따라 추론 속도 조절 (requestAnimationFrame vs setTimeout)
-    if (currentMode === 'low') {
-        setTimeout(runDetection, 500); // 0.5초
-    } else if (currentMode === 'mid') {
-        setTimeout(runDetection, 200); // 0.2초
-    } else {
-        requestAnimationFrame(runDetection); // 실시간
-    }
 }
 
 btnToggle.addEventListener('click', toggleCam);
